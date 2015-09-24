@@ -1,0 +1,42 @@
+#chart {
+    width : 640;
+    height : 480;
+    border: 2px solid #000000;
+}
+
+#wordGroups {
+    padding-bottom: 20px;
+}
+
+.line {
+  stroke: #000;
+  stroke-width: 1.5px;
+}
+
+text {
+    cursor : default
+}
+
+.word {
+    width : 80px;
+    border : 1px solid #000000;
+    background-color : #EEEEEE;
+    margin : 5px;
+    padding : 2px;
+    display : inline-block;
+}
+
+.wordGroup table,
+.wordGroup th,
+.wordGroup td {
+    width : 410px;
+    border : 1px solid black;
+    padding : 5px;
+    display : inline-block;
+}
+
+.wordGroup th {
+    color: #222222;
+    text-align : center;
+    background : #EEEEEE;
+}

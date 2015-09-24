@@ -1,0 +1,55 @@
+<meta http-equiv="content-type" content="text/html; charset=UTF8">
+<html>
+  <head>
+    <script src="js/jquery.js"></script>
+    <script src="js/d3.js"></script>
+    <script src="js/PorterStemmer2.min.js"></script>
+    <script src="js/underscore.js"></script>
+    <script src="js/backbone.js"></script>
+
+    <script src="js/index.js"></script>
+    <link rel="stylesheet" type="text/css" href="/css/mystyle.css">
+
+    <script id="wordTemplate" type="text/template">
+      <div class="word">
+        <%= word %>
+      </div>
+    </script>
+
+    <script id="wordGroupTemplate" type="text/template">
+      <table class="wordGroup">
+        <tr>
+          <th>Word Group <%= id %></th>
+        </tr>
+        <tr>
+          <td>
+            <div class="words"></div>
+          </td>
+        </tr>
+        <tr>
+          <th>Suggested Words</th>
+        </tr>
+        <tr>
+          <td>
+            <div class="suggestedWords"></div>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            Good <input type="radio" name="goodbad" class="good" checked>,
+            Bad <input type="radio" name="goodbad" class="bad">
+          </td>
+        </tr>
+        <tr>
+          <th class="removeSpan">
+            <button>Remove word group</button>
+          </th>
+        </tr>
+      </table>
+    </script>
+  </head>
+  <body>
+    <div id="wordGroups"></div>
+    <input type="text" id="initialWord" value="oxide"><button id="addWordGroup">Add Word Group</button>
+  </body>
+</html>
