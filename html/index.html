@@ -12,44 +12,65 @@
 
     <script id="wordTemplate" type="text/template">
       <div class="word">
+        <button>x</button>
         <%= word %>
+      </div>
+    </script>
+
+    <script id="wordSuggestTemplate" type="text/template">
+      <div class="word">
+        <button class="g">+</button>
+        <%= word %>
+        <button class="b">-</button>
       </div>
     </script>
 
     <script id="wordGroupTemplate" type="text/template">
       <table class="wordGroup">
         <tr>
-          <th>Word Group <%= id %></th>
+          <th>Positive Words</th>
+          <th>Negative Words</th>
         </tr>
         <tr>
           <td>
-            <div class="words"></div>
+            <div class="positiveWords"></div>
+          </td>
+          <td>
+            <div class="negativeWords"></div>
           </td>
         </tr>
         <tr>
-          <th>Suggested Words</th>
+          <th colspan="2">Suggested Words</th>
         </tr>
         <tr>
-          <td>
+          <td colspan="2">
             <div class="suggestedWords"></div>
           </td>
-        </tr>
-        <tr>
-          <td>
-            Good <input type="radio" name="goodbad" class="good" checked>,
-            Bad <input type="radio" name="goodbad" class="bad">
-          </td>
-        </tr>
-        <tr>
-          <th class="removeSpan">
-            <button>Remove word group</button>
-          </th>
         </tr>
       </table>
     </script>
   </head>
   <body>
+    <div class="searchBar">
+      Search: <input type="text" id="words" value="oxide layer"><button id="addManualWords">Search</button>
+    </div>
+
     <div id="wordGroups"></div>
-    <input type="text" id="initialWord" value="oxide"><button id="addWordGroup">Add Word Group</button>
+    <!--<input type="text" id="numberSentences"><br>-->
+    <button id="search">Search</button>
+    <div id="results">
+      <table>
+        <tr>
+          <th colspan="2">
+            Search Results
+          </th>
+        </tr>
+        <tbody id="resultsBody"></tbody>
+      </table>
+    </div>
+
+    <div class="license">
+      ElSevier said I should include this statement: "Some rights reserved. This work permits non-commercial use, distribution, and reproduction in any medium, provided the original author and source are credited." This is the full license for the data here: <a href="http://www.elsevier.com/__data/assets/pdf_file/0012/102234/TDM-sign-up-short-form.pdf">TDM license</a>
+    </div>
   </body>
 </html>

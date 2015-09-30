@@ -8,6 +8,16 @@
     padding-bottom: 20px;
 }
 
+.searchBar {
+    padding-top: 20px;
+    padding-bottom: 20px;
+    text-align: center;
+}
+
+.searchBar input {
+    width : 80%;
+}
+
 .line {
   stroke: #000;
   stroke-width: 1.5px;
@@ -18,21 +28,31 @@ text {
 }
 
 .word {
-    width : 80px;
     border : 1px solid #000000;
     background-color : #EEEEEE;
-    margin : 5px;
+    margin : 2px;
     padding : 2px;
     display : inline-block;
 }
 
-.wordGroup table,
+.wordGroup {
+    display : inline-block;
+}
+
+.wordGroup {
+    width : 100%;
+}
+
 .wordGroup th,
 .wordGroup td {
-    width : 410px;
+    font-size : 12pt;
     border : 1px solid black;
-    padding : 5px;
-    display : inline-block;
+    padding : 2px;
+}
+
+.wordGroup th,
+.wordGroup td {
+    width : 50%;
 }
 
 .wordGroup th {
@@ -40,3 +60,49 @@ text {
     text-align : center;
     background : #EEEEEE;
 }
+
+#results {
+    padding-top : 20px;
+    padding-bottom : 50px;
+}
+
+#results table {
+    border-collapse : collapse;
+    width : 100%;
+}
+
+#results table,
+#results th,
+#results td {
+    /*background-color : #FAFAF0;*/
+    border : 1px solid black;
+    padding : 5px;
+    margin : 0px;
+}
+
+#results th {
+    color: #222222;
+    text-align : center;
+    background : #EEEEEE;
+}
+
+form {
+    margin-bottom: 0em;
+}
+
+.license {
+    border-top : 1px solid #000000;
+    border-bottom : 1px solid #000000;
+    background : #EEEEEE;
+    bottom : 0px;
+    position : fixed;
+}
+
+body {
+    height : 100%;
+}
+
+#results .paper {
+    width : 20%;
+}
+

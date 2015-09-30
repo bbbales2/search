@@ -2,12 +2,31 @@ var Words = Words || {}
 
 Words.WordGroup = Backbone.View.extend(
     {
-        addWord : function(word)
+        addPositiveWord : function(word)
         {
-            if(word in this.selectors)
+            if(word in this.positiveSelectors)
                 return;
 
-            this.selectors[word] = $( this.wordTemplate({ word : word } ) ).appendTo( this.$el.find('.words') )
+            this.positiveSelectors[word] = $( this.wordTemplate({ word : word } ) )
+                .appendTo( this.$el.find('.positiveWords') );
+
+            this.positiveSelectors[word]
+                .find("button")
+                .click(_.bind(_.partial(this.removeWord, word), this));
+
+            this.buildNewSuggestions();
+        },
+
+        addNegativeWord : function(word)
+        {
+            if(word in this.negativeSelectors)
+                return;
+
+            this.negativeSelectors[word] = $( this.wordTemplate({ word : word } ) )
+                .appendTo( this.$el.find('.negativeWords') );
+
+            this.negativeSelectors[word]
+                .find("button")
                 .click(_.bind(_.partial(this.removeWord, word), this));
 
             this.buildNewSuggestions();
@@ -15,55 +34,84 @@ Words.WordGroup = Backbone.View.extend(
 
         removeWord : function(word, e)
         {
-            this.selectors[word].remove();
-            delete this.selectors[word];
-
-            if(_.keys(this.selectors).length == 0)
-                this.remove();
-            else
-                this.buildNewSuggestions();
-        },
-
-        buildNewSuggestions : function()
-        {
-            var words = _.keys(this.selectors);
-
-            var stemmed = words.map(function(element) { return stemmer(element); });
-
-            var suggested = [];
-            for(var i = 0; i < stemmed.length; i++)
+            if(word in this.positiveSelectors)
             {
-                if(stemmed[i] in Words.combos)
-                    suggested = suggested.concat(Words.combos[stemmed[i]]);
+                this.positiveSelectors[word].remove();
+                delete this.positiveSelectors[word];
             }
 
-            suggested.sort(function(a, b) { return -(a[1] - b[1]); });
+            if(word in this.negativeSelectors)
+            {
+                this.negativeSelectors[word].remove();
+                delete this.negativeSelectors[word];
+            }
 
-            suggested = _.difference(suggested.map(function(element) { return element[0]; }), stemmed);
+            //if((_.keys(this.positiveSelectors).length + _.keys(this.negativeSelectors).length) == 0)
+            //    this.remove();
+            //else
+            this.buildNewSuggestions();
+        },
+
+        buildNewSuggestions : function(words)
+        {
+            if(typeof(this.token) == "undefined")
+                this.token = 0;
+
+            var positiveWords = _.keys(this.positiveSelectors).map( function(word) { return stemmer(word); } );
+            var negativeWords = _.keys(this.negativeSelectors).map( function(word) { return stemmer(word); } );
+
+            this.token = this.token + 1;
+
+            $.ajax({
+                type : 'POST',
+                url : 'getSuggestions',
+                data : { positiveWords : JSON.stringify(positiveWords),
+                         negativeWords : JSON.stringify(negativeWords),
+                         token : this.token },
+                success : _.bind(this.buildNewSuggestionsFinish, this),
+                dataType : 'json'
+            });
+        },
+
+        buildNewSuggestionsFinish : function(out)
+        {
+            // Reject suggestions that come back with wrong token, this is some sort of lock
+            if(this.token != out.token)
+                return;
+
+            var suggested = out.suggested;
+            var weights = out.weights;
 
             var suggestDom = this.$el.find( '.suggestedWords' ).empty();
 
-            for(var i = 0; i < Math.min(8, suggested.length); i++)
+            var o = d3.scale.linear()
+                .domain([_.min(weights), _.max(weights)])
+                .range(["blue", "red"]);
+
+            for(var i = 0; i < suggested.length; i++)
             {
-                $( this.wordTemplate({ word : suggested[i] }) ).appendTo( suggestDom )
-                    .click(_.bind(_.partial(this.addWord, suggested[i]), this));
+                var wordEl = $( this.wordSuggestTemplate({ word : suggested[i] }) )
+                    .appendTo( suggestDom )
+                    .css('color', o(weights[i]));
+
+                wordEl.find('.g').click(_.bind(_.partial(this.addPositiveWord, suggested[i]), this));
+                wordEl.find('.b').click(_.bind(_.partial(this.addNegativeWord, suggested[i]), this));
             }
         },
 
         getState : function()
         {
-            return [_.keys(this.selectors), this.$el.find( 'input.good' ).prop('checked')];
-            //console.log('hi');
+            return { positiveWords : _.keys(this.positiveSelectors),
+                     negativeWords : _.keys(this.negativeSelectors) };
         },
 
         initialize : function(options)
         {
-            this.id = options.id;
-            this.word = options.word;
             this.el = options.el;
             this.$el = $( this.el );
 
-            this.selectors = {};
+            this.positiveSelectors = {};
+            this.negativeSelectors = {};
         },
         
         render : function()
@@ -71,10 +119,15 @@ Words.WordGroup = Backbone.View.extend(
             var template = _.template($( '#wordGroupTemplate' ).text());
 
             this.wordTemplate = _.template($( '#wordTemplate' ).text());
+            this.wordSuggestTemplate = _.template($( '#wordSuggestTemplate' ).text());
 
-            this.$el.html( template({ id : this.id }) );
+            var newEl = $( template({ id : this.id }) );
 
-            this.addWord(this.word);
+            this.$el.replaceWith( newEl );
+            this.el = newEl[0];
+            this.$el = newEl;
+
+            this.$el.find( '.removeSpan button' ).click(_.bind(this.remove, this));
         },
     }
 );
@@ -82,31 +135,84 @@ Words.WordGroup = Backbone.View.extend(
 Words.Controller = Backbone.View.extend(
     {
         events : {
-            "click #addWordGroup" : "addWordGroup"
+            "click #addManualWords" : "addManualWords",
+            "click #search" : "search",
+            "keypress #words" : "keySearch"
         },
 
         initialize : function(options)
         {
-            this.wordGroups = [];
+            this.wordGroup = undefined;
         },
 
-        addWordGroup : function()
+        addManualWords : function()
         {
-            var word = this.$el.find( "#initialWord" ).val().trim();
+            var positiveWords = this.$el.find( "#words" ).val().trim().split(" ");
+            var negativeWords = [];//this.$el.find( "#negativeWords" ).val().trim().split(" ");
 
-            if(word.length > 0)
+            if((positiveWords.length + negativeWords.length) > 0)
             {
-                var div = $( '<div></div>' ).appendTo( this.$el.find( '#wordGroups' ) );
+                for(var i = 0; i < positiveWords.length; i++)
+                {
+                    if(positiveWords[i].length > 0)
+                        this.wordGroup.addPositiveWord(positiveWords[i]);
+                }
 
-                this.wordGroups.push(new Words.WordGroup({ el : div[0], word : word, id : this.wordGroups.length }));
-                
-                this.wordGroups[this.wordGroups.length - 1].render();
+                for(var i = 0; i < negativeWords.length; i++)
+                {
+                    if(negativeWords[i].length > 0)
+                        this.wordGroup.addNegativeWord(negativeWords[i]);
+                }
+
+                //if(this.wordGroup.getState().words.length == 0)
+                //    this.wordGroup.remove();
+            }
+        },
+
+        keySearch : function(e)
+        {
+            if(e.which == 13)
+            {
+                this.addManualWords();
             }
         },
 
         search : function()
         {
-            $.
+            var state = this.wordGroup.getState();
+
+            this.token = Math.random();
+
+            $.ajax({
+                type : 'POST',
+                url : 'getRankings',
+                data : { token : this.token,
+                         positiveWords : JSON.stringify(state.positiveWords),
+                         negativeWords : JSON.stringify(state.negativeWords) },
+                success : _.bind(this.handleSearchResponse, this),
+                dataType : 'json'
+            });
+        },
+
+        handleSearchResponse : function(data)
+        {
+            if(this.token != data.token)
+                return;
+
+            var tbody = this.$el.find( '#resultsBody' );
+
+            tbody.empty();
+
+            var rowTemplate = _.template('<tr><td><%= string %></td><td class="paper"><a href="<%= paper.url %>"><%= paper.title %></a></td></tr>');
+
+            for(var i = 0; i < data.rankings['lsi'].length; i++)
+            {
+                var id = data.rankings['lsi'][i];
+
+                var row = $( rowTemplate( data.sentences[id[0]] ) );
+
+                tbody.append( row );
+            }
         },
         
         render : function()
@@ -114,22 +220,26 @@ Words.Controller = Backbone.View.extend(
             this.$el = $("body");
             this.el = this.$el[0];
 
+            var div = $( '<span></span>' ).appendTo( this.$el.find( '#wordGroups' ) );
+            
+            var wg = new Words.WordGroup({ el : div[0], words : ['oxide', 'layer'] });
+            
+            this.wordGroup = wg;
+
+            wg.render();
+            
             //$("#addWordGroup").click(_.bind(this.addWordGroup, this));
             this.delegateEvents();
         },
     }
 );
 
-$.getJSON("webCombos.json", function(data) 
-{
-    Words.combos = data;
-
-    $( document ).ready( function() {
-        var cont = new Words.Controller();
-        
-        cont.render();
-
-        $( "#addWordGroup" ).click();
-    });
+$( document ).ready( function() {
+    var cont = new Words.Controller();
+    
+    cont.render();
+    
+    $( "#addManualWords" ).click();
+    $( "#search" ).click();
 });
 
